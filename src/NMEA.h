@@ -1,0 +1,220 @@
+#include <iostream>
+#include <string>
+#include <array>
+#include <vector>
+#include <map>
+
+// Check if GNSS system ID is enabled with NMEAVERSION 4.11
+// Table of GNSS System and Signal ID'S: (https://docs.novatel.com/OEM7/Content/Logs/GPGRS.htm#System)
+// NMEAVERSION command: (https://docs.novatel.com/OEM7/Content/Commands/NMEAVERSION.htm)
+
+// https://cplusplus.com/reference/string/string/append/
+// https://en.wikipedia.org/wiki/List_of_GPS_satellites
+
+class NMEA_Parser {
+    NMEA_Parser () {
+        init_enums();
+    }
+
+    public:
+    // DD, NOT DMS OR DMM
+    double latitude = 0;
+    // DD, NOT DMS OR DMM
+    double longitude = 0;
+
+    double hdop = 0;
+    double vdop = 0;
+    double pdop = 0;
+    // METERS
+    double msl = 0;
+    // METERS
+    double gsep = 0;
+    // SECONDS
+    double adgd = 0;
+
+    int hh = 0;
+    int mm = 0;
+    int ss = 0;
+    int ms = 0;
+    int fix = 0;
+    int sat = 0;
+    int mode = 0;
+
+    // {PRN, ELEVATION, AZIMUTH, SNR}
+    std::vector<std::array<int, 4>> sat_status;
+
+    void parse(std::string* sentence_group) {
+        std::size_t idx = 0;
+        std::string delim = " ";
+        // std::string sentence_group_cpy = sentence_group;
+        
+        // Remove any spaces [Check if spaces are common]
+        while ((idx = (*sentence_group).find(delim)) != std::string::npos) {
+            (*sentence_group).erase((*sentence_group).begin()+idx);
+        }
+        
+        // Get individual sentences
+        std::size_t start_idx = 0;
+        std::size_t end_idx;
+        std::string start_delim = "$";
+        std::string end_delim = "*";
+        std::string NMEA_sentence;
+
+        /// Loops through every valid NMEA sentence, parses it, and stores relevant information into appropriate class variables
+        while ((start_idx = (*sentence_group).find(start_delim)) != std::string::npos && (end_idx = (*sentence_group).find(end_delim)) != std::string::npos) {
+            NMEA_sentence = (*sentence_group).substr(start_idx, (end_idx-start_idx+3));
+            switch (NMEA_sentence_map[NMEA_sentence.substr(0, 6)]) {
+                case ev_GGA:
+                    parse_GGA(split(NMEA_sentence));
+                    break;
+                case ev_GSV:
+                    parse_GSV(split(NMEA_sentence));
+                    break;
+                case ev_RMC:
+                    parse_GSV(split(NMEA_sentence));
+                    break;
+                case ev_GSA:
+                    parse_GSV(split(NMEA_sentence));
+                    break;
+                default:
+                    //Remove message?
+                    std::cout << "\"" << NMEA_sentence.substr(0, 6) << "\"" << "is not a verified GPS NMEA sentence or unsupported NMEA sentence type" << std::endl;
+                    break;
+            }
+            (*sentence_group).erase(start_idx, (end_idx-start_idx+3));
+        }
+
+        return;
+    }
+
+    private:
+    enum StringValue {ev_GGA, ev_GSV, ev_RMC, ev_GSA};
+    static std::map<std::string, StringValue> NMEA_sentence_map;
+    void init_enums() {
+        NMEA_sentence_map["$GPGGA"] = ev_GGA;
+        NMEA_sentence_map["$GPGSV"] = ev_GSV;
+        NMEA_sentence_map["$GPRMC"] = ev_RMC;
+        NMEA_sentence_map["$GPGSA"] = ev_GSA;
+    }
+
+    void parse_GGA(std::vector<std::string> GGA) {
+        // https://docs.novatel.com/OEM7/Content/Logs/GPGGA.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CGNSS%20Logs%7C_____59
+
+        // Time
+        hh = std::stoi(GGA[1].substr(0, 2));
+        mm = std::stoi(GGA[1].substr(2, 2));
+        ss = std::stoi(GGA[1].substr(4, 2));
+        ms = std::stoi(GGA[1].substr(7, 3));
+
+        // Latitude & Longitude
+        double inter_lat, inter_lon;
+        inter_lat = std::trunc((std::stod(GGA[2])/100)) + (std::stod(GGA[2].substr(2, 7))/60);
+        if (GGA[3] == "S") {
+            inter_lat *= -1;
+        }
+        inter_lon = std::trunc((std::stod(GGA[4])/100)) + (std::stod(GGA[4].substr(3, 7))/60);
+        if (GGA[5] == "W") {
+            inter_lon *= -1;
+        }
+        latitude = inter_lat;
+        longitude = inter_lon;
+
+
+        // Fix, satellites, and HDOP
+        fix = std::stoi(GGA[6]);
+        sat = std::stoi(GGA[7]);
+        hdop = std::stod(GGA[8]);
+
+        // Altitude, Geoid Seperation, and Age of Differential GPS Data
+        if (GGA[9] == "") {
+            msl = 0;
+        } else {
+            msl = std::stod(GGA[9]);
+        }
+        if (GGA[11] == "") {
+            gsep = 0;
+        } else {
+            gsep = std::stod(GGA[11]);
+        }
+        if (GGA[13] == "") {
+            adgd = 0;
+        } else {
+            adgd = std::stod(GGA[13]);
+        }
+
+        return;
+    }
+
+    void parse_GSV(std::vector<std::string> GSV) {
+        // https://docs.novatel.com/OEM7/Content/Logs/GPGSV.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CGNSS%20Logs%7C_____65
+
+        if (GSV[2] == "1") {
+            sat_status.clear();
+        }
+        //             {            }{           }{           }{           }
+        //   0   1 2 3   4  5  6   7  8  9  10 11 12 13  14 15 16 17 18  19
+        //$GPGSV,3,2,11,14,25,170,00,16,57,208,39,18,67,296,40,19,40,246,00*74
+        std::array<int, 4> sv_buffer {};
+
+        int prn = 4;
+        int elev = 5;
+        int az = 6;
+        int snr = 7;
+
+        // Amount of SV's
+        // ({sentence parts}-{First four irrelevant sentence parts (sentence tpye, amount of GSV sentence, current GSV sentence, satellite count)})/{4; amount of SV information in each part}
+        std::size_t svs = (GSV.size()-4)/4;
+
+        for (int i = 0; i < svs; i++) {
+            if (GSV[prn+(i*4)] != "") {
+                if (GSV[snr+(i*4)] != "") {
+                    sv_buffer = {std::stoi(GSV[prn+(i*4)]), std::stoi(GSV[elev+(i*4)]), std::stoi(GSV[az+(i*4)]), std::stoi(GSV[snr+(i*4)])};
+                } else if (GSV[snr+(i*4)] == "") {
+                    sv_buffer = {std::stoi(GSV[prn+(i*4)]), std::stoi(GSV[elev+(i*4)]), std::stoi(GSV[az+(i*4)]), 0};
+                } else {
+                    sv_buffer = {std::stoi(GSV[prn+(i*4)]), 0, 0, 0};
+                }
+            }
+            sat_status.push_back(sv_buffer);
+        }
+
+        return;
+    }
+
+    void parse_RMC(std::vector<std::string> RMC) {
+        // https://docs.novatel.com/OEM7/Content/Logs/GPRMC.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CGNSS%20Logs%7C_____69
+
+        
+
+        return; 
+    }
+
+    void parse_GSA(std::vector<std::string> GSA) {
+        // https://aprs.gids.nl/nmea/#gsa
+        // https://docs.novatel.com/OEM7/Content/Logs/GPGSA.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CGNSS%20Logs%7C_____63
+        if (GSA[2] == "") {
+            mode = std::stoi(GSA[2]);
+            if (GSA[15] == "") { mode = std::stod(GSA[15]); } else { pdop = 0; }
+            if (GSA[16] == "") { mode = std::stod(GSA[16]); } else { hdop = 0; }
+            if (GSA[17] == "") { mode = std::stod(GSA[17]); } else { vdop = 0; }
+            } else { mode = 0; pdop = 0; hdop = 0; vdop = 0; }
+
+        return;
+    }
+
+    std::vector<std::string> split(std::string sentence) {
+        std::size_t idx = 0;
+        std::string delim = ",";
+        std::string sentence_cpy = sentence;
+        std::vector<std::string> rtn;
+
+        // Seperate message parts
+        while ((idx = sentence_cpy.find(delim)) != std::string::npos) {
+            rtn.push_back(sentence_cpy.substr(0, idx));
+            sentence_cpy.erase(0, idx + delim.length());
+        }
+        rtn.push_back(sentence_cpy);
+
+        return rtn;
+    }
+};
