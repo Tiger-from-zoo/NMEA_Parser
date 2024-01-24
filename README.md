@@ -9,4 +9,7 @@ Supported NMEA sentences:
   - `GPRMC`[^1]
 ## Todo:
 - [ ]  Add `GPRMC` sentence parser function
+- [ ]  Add interal DD to DMS converter on directive
+- [ ]  Add directives for accepted NMEA sentences
+
 [^1]: Not implemented as of 01/24/2024

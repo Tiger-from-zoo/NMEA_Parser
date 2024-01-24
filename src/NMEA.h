@@ -27,15 +27,31 @@ class NMEA_Parser {
     double pdop = 0;
     // METERS
     double msl = 0;
+
+    // Geoid Seperation / Undulation
     // METERS
     double gsep = 0;
+
+    // Time since latest correction data update
     // SECONDS
     double adgd = 0;
 
+    //Track made good / True heading
+    // DEGREES
+    double deg_t = 0;
+
+    // Magnetic Variation
+    // DEGREES
+    double mag_var = 0;
+
+    //
+
+    // Time
     int hh = 0;
     int mm = 0;
     int ss = 0;
     int ms = 0;
+
     int fix = 0;
     int sat = 0;
     int mode = 0;
