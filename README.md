@@ -11,5 +11,7 @@ Supported NMEA sentences:
 - [ ]  Add `GPRMC` sentence parser function
 - [ ]  Add interal DD to DMS converter on directive
 - [ ]  Add directives for accepted NMEA sentences
+- [ ]  Add option to disable `GPGSV` sentence
+- [ ]  Add date option
 
 [^1]: Not implemented as of 01/24/2024
