@@ -17,14 +17,20 @@ class NMEA_Parser {
     }
 
     public:
+    // Latitude
     // DD, NOT DMS OR DMM
     double latitude = 0;
+
+    // Longitude
     // DD, NOT DMS OR DMM
     double longitude = 0;
 
+    // All precision dilutions
     double hdop = 0;
     double vdop = 0;
     double pdop = 0;
+
+    // Altitude
     // METERS
     double msl = 0;
 
@@ -44,16 +50,53 @@ class NMEA_Parser {
     // DEGREES
     double mag_var = 0;
 
-    //
+    // Magnetic Variation Direction
+    // STING (E OR W)
+    std::string mag_var_dir;
+
+    //Position Status
+    // A = Valid
+    // V = invalid
+    std::string pos_stat;
+
+    // Spped
+    // KNOTS
+    double speed;
 
     // Time
+    // Hours
     int hh = 0;
+
+    // Minutes
     int mm = 0;
+
+    // Seconds
     int ss = 0;
+
+    // Milliseconds
     int ms = 0;
 
+    // Misc.
+    // Fix
+    // 0 = Fix not availible or valid
+    // 1 = Single point
+    // 2 = Pseudorange differential
+    // 4 = RTK fixed ambiguity solution
+    // 5 = RTK floating ambiguity solution
+    // 6 = Dead reckoning mode (ESTIMATED POSITION)
+    // 7 = Manually inputed position
+    // 8 = Simulation
+    // 9 = SBAS
     int fix = 0;
+
+    // Satellites
+    // COUNT
     int sat = 0;
+
+    // Fix mode
+    // 1 = Fix not availible 
+    // 2 = 2D
+    // 3 = 3D
     int mode = 0;
 
     // {PRN, ELEVATION, AZIMUTH, SNR}
@@ -142,21 +185,9 @@ class NMEA_Parser {
         hdop = std::stod(GGA[8]);
 
         // Altitude, Geoid Seperation, and Age of Differential GPS Data
-        if (GGA[9] == "") {
-            msl = 0;
-        } else {
-            msl = std::stod(GGA[9]);
-        }
-        if (GGA[11] == "") {
-            gsep = 0;
-        } else {
-            gsep = std::stod(GGA[11]);
-        }
-        if (GGA[13] == "") {
-            adgd = 0;
-        } else {
-            adgd = std::stod(GGA[13]);
-        }
+        if (GGA[9] != "") { msl = std::stod(GGA[9]); } else { msl = 0; }
+        if (GGA[11] != "") { gsep = std::stod(GGA[11]); } else { gsep = 0; }
+        if (GGA[13] != "") { adgd = std::stod(GGA[13]); } else { adgd = 0; }
 
         return;
     }
@@ -199,8 +230,10 @@ class NMEA_Parser {
 
     void parse_RMC(std::vector<std::string> RMC) {
         // https://docs.novatel.com/OEM7/Content/Logs/GPRMC.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CGNSS%20Logs%7C_____69
-
-        
+        if(RMC[7] != "") { speed = std::stod(RMC[7]); } else { speed = 0; }
+        if(RMC[8] != "") { deg_t = std::stod(RMC[8]); } else { deg_t = 0; }
+        if(RMC[10] != "") { mag_var = std::stod(RMC[10]); } else { mag_var = 0;}
+        if(RMC[11] != "") { mag_var_dir = RMC[11]; } else { mag_var_dir = "E"; }
 
         return; 
     }
@@ -210,9 +243,9 @@ class NMEA_Parser {
         // https://docs.novatel.com/OEM7/Content/Logs/GPGSA.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CGNSS%20Logs%7C_____63
         if (GSA[2] == "") {
             mode = std::stoi(GSA[2]);
-            if (GSA[15] == "") { mode = std::stod(GSA[15]); } else { pdop = 0; }
-            if (GSA[16] == "") { mode = std::stod(GSA[16]); } else { hdop = 0; }
-            if (GSA[17] == "") { mode = std::stod(GSA[17]); } else { vdop = 0; }
+            if (GSA[15] != "") { pdop = std::stod(GSA[15]); } else { pdop = 0; }
+            if (GSA[16] != "") { hdop = std::stod(GSA[16]); } else { hdop = 0; }
+            if (GSA[17] != "") { vdop = std::stod(GSA[17]); } else { vdop = 0; }
             } else { mode = 0; pdop = 0; hdop = 0; vdop = 0; }
 
         return;
