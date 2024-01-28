@@ -25,7 +25,8 @@ class NMEA_Parser {
     // DD, NOT DMS OR DMM
     double longitude = 0;
 
-    // All precision dilutions
+    /// All precision dilutions
+
     double hdop = 0;
     double vdop = 0;
     double pdop = 0;
@@ -63,7 +64,8 @@ class NMEA_Parser {
     // KNOTS
     double speed;
 
-    // Time
+    /// Time
+
     // Hours
     int hh = 0;
 
@@ -76,7 +78,8 @@ class NMEA_Parser {
     // Milliseconds
     int ms = 0;
 
-    // Misc.
+    /// Misc.
+
     // Fix
     // 0 = Fix not availible or valid
     // 1 = Single point
@@ -99,15 +102,17 @@ class NMEA_Parser {
     // 3 = 3D
     int mode = 0;
 
-    // {PRN, ELEVATION, AZIMUTH, SNR}
-    std::vector<std::array<int, 4>> sat_status;
+    // Satellite information vector
+    // Each element is an array of 4 doubles and, in order, they mean: {PRN, ELEVATION, AZIMUTH, SNR}
+    std::vector<std::array<double, 4>> sat_status;
 
+    // Takes in a pointer to a buffer string to parse NMEA sentences
     void parse(std::string* sentence_group) {
         std::size_t idx = 0;
         std::string delim = " ";
         // std::string sentence_group_cpy = sentence_group;
         
-        // Remove any spaces [Check if spaces are common]
+        // Remove any spaces
         while ((idx = (*sentence_group).find(delim)) != std::string::npos) {
             (*sentence_group).erase((*sentence_group).begin()+idx);
         }
@@ -119,7 +124,7 @@ class NMEA_Parser {
         std::string end_delim = "*";
         std::string NMEA_sentence;
 
-        /// Loops through every valid NMEA sentence, parses it, and stores relevant information into appropriate class variables
+        /// Loops through every valid NMEA sentence, parses it, hands off sentence in a vector to appropriate sub-parser function, and stores relevant information into variables
         while ((start_idx = (*sentence_group).find(start_delim)) != std::string::npos && (end_idx = (*sentence_group).find(end_delim)) != std::string::npos) {
             NMEA_sentence = (*sentence_group).substr(start_idx, (end_idx-start_idx+3));
             switch (NMEA_sentence_map[NMEA_sentence.substr(0, 6)]) {
@@ -149,12 +154,15 @@ class NMEA_Parser {
     private:
     enum StringValue {ev_GGA, ev_GSV, ev_RMC, ev_GSA};
     static std::map<std::string, StringValue> NMEA_sentence_map;
+
     void init_enums() {
         NMEA_sentence_map["$GPGGA"] = ev_GGA;
         NMEA_sentence_map["$GPGSV"] = ev_GSV;
         NMEA_sentence_map["$GPRMC"] = ev_RMC;
         NMEA_sentence_map["$GPGSA"] = ev_GSA;
     }
+
+    // Sub-parser functions
 
     void parse_GGA(std::vector<std::string> GGA) {
         // https://docs.novatel.com/OEM7/Content/Logs/GPGGA.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CGNSS%20Logs%7C_____59
@@ -193,16 +201,18 @@ class NMEA_Parser {
     }
 
     void parse_GSV(std::vector<std::string> GSV) {
-        // https://docs.novatel.com/OEM7/Content/Logs/GPGSV.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CGNSS%20Logs%7C_____65
+        // ^1 = https://docs.novatel.com/OEM7/Content/Logs/GPGSV.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CGNSS%20Logs%7C_____65
 
+        // If a new set of GSV sentences arrives, the sentence index(Message number^1) will be "1," so it clears the old satellite information
         if (GSV[2] == "1") {
             sat_status.clear();
         }
         //             {            }{           }{           }{           }
         //   0   1 2 3   4  5  6   7  8  9  10 11 12 13  14 15 16 17 18  19
         //$GPGSV,3,2,11,14,25,170,00,16,57,208,39,18,67,296,40,19,40,246,00*74
-        std::array<int, 4> sv_buffer {};
-
+        std::array<double, 4> sv_buffer {};
+        
+        // Indicies of satellite information in sv_buffer
         int prn = 4;
         int elev = 5;
         int az = 6;
@@ -215,14 +225,14 @@ class NMEA_Parser {
         for (int i = 0; i < svs; i++) {
             if (GSV[prn+(i*4)] != "") {
                 if (GSV[snr+(i*4)] != "") {
-                    sv_buffer = {std::stoi(GSV[prn+(i*4)]), std::stoi(GSV[elev+(i*4)]), std::stoi(GSV[az+(i*4)]), std::stoi(GSV[snr+(i*4)])};
+                    sv_buffer = {std::stod(GSV[prn+(i*4)]), std::stod(GSV[elev+(i*4)]), std::stod(GSV[az+(i*4)]), std::stod(GSV[snr+(i*4)])};
                 } else if (GSV[snr+(i*4)] == "") {
-                    sv_buffer = {std::stoi(GSV[prn+(i*4)]), std::stoi(GSV[elev+(i*4)]), std::stoi(GSV[az+(i*4)]), 0};
+                    sv_buffer = {std::stod(GSV[prn+(i*4)]), std::stod(GSV[elev+(i*4)]), std::stod(GSV[az+(i*4)]), 0};
                 } else {
-                    sv_buffer = {std::stoi(GSV[prn+(i*4)]), 0, 0, 0};
+                    sv_buffer = {std::stod(GSV[prn+(i*4)]), 0, 0, 0};
                 }
+                sat_status.push_back(sv_buffer);
             }
-            sat_status.push_back(sv_buffer);
         }
 
         return;
@@ -251,13 +261,14 @@ class NMEA_Parser {
         return;
     }
 
+    // Individual sentence part splitter
     std::vector<std::string> split(std::string sentence) {
         std::size_t idx = 0;
         std::string delim = ",";
         std::string sentence_cpy = sentence;
         std::vector<std::string> rtn;
 
-        // Seperate message parts
+        // Seperate sentence parts
         while ((idx = sentence_cpy.find(delim)) != std::string::npos) {
             rtn.push_back(sentence_cpy.substr(0, idx));
             sentence_cpy.erase(0, idx + delim.length());

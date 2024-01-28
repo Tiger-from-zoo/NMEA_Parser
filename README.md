@@ -13,3 +13,5 @@ Supported NMEA sentences:
 - [ ]  Add directives for accepted NMEA sentences
 - [ ]  Add option to disable `GPGSV` sentence
 - [ ]  Add date option
+- [ ]  In `parse()` decide whether to `std::cout` the error or to remove it
+- [ ]  Fix issue with not being able to run functions or access variables
