@@ -12,11 +12,11 @@
 // https://en.wikipedia.org/wiki/List_of_GPS_satellites
 
 class NMEA_Parser {
+    public:
     NMEA_Parser () {
         init_enums();
     }
 
-    public:
     // Latitude
     // DD, NOT DMS OR DMM
     double latitude = 0;
@@ -153,17 +153,18 @@ class NMEA_Parser {
 
     private:
     enum StringValue {ev_GGA, ev_GSV, ev_RMC, ev_GSA};
-    static std::map<std::string, StringValue> NMEA_sentence_map;
+    std::map<std::string, StringValue> NMEA_sentence_map;
 
     void init_enums() {
         NMEA_sentence_map["$GPGGA"] = ev_GGA;
         NMEA_sentence_map["$GPGSV"] = ev_GSV;
         NMEA_sentence_map["$GPRMC"] = ev_RMC;
         NMEA_sentence_map["$GPGSA"] = ev_GSA;
+
+        return; 
     }
 
     // Sub-parser functions
-
     void parse_GGA(std::vector<std::string> GGA) {
         // https://docs.novatel.com/OEM7/Content/Logs/GPGGA.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CGNSS%20Logs%7C_____59
 
