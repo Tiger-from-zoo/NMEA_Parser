@@ -15,3 +15,4 @@ Supported NMEA sentences:
 - [ ]  Add date option
 - [ ]  In `parse()` decide whether to `std::cout` the error or to remove it
 - [ ]  Fix issue with not being able to run functions or access variables
+- [ ]  Analyze NMEA data, from start up to functioning

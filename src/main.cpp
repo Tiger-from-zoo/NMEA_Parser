@@ -37,9 +37,21 @@ int main() {
     //for (int i = 0; i < svs; i++) {
     //    std::cout << prn+(i*4) << std::endl;
     //}
-    NMEA_Parser par;
-    std::cout << par.adgd << std::endl;
+    // NMEA_Parser par;
+    // std::cout << par.adgd << std::endl;
 
+    std::string date = "210307";
+    int year = 0;
+    int month = 0;
+    int day = 0;
+
+    day = std::stoi(date.substr(0, 2));
+    month = std::stoi(date.substr(2, 2));
+    year = 2000 + std::stoi(date.substr(4, 2));
+    
+    std::cout << day << std::endl;
+    std::cout << month << std::endl;
+    std::cout << year << std::endl;
 
     return 0;
 }
