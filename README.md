@@ -7,6 +7,9 @@ Supported NMEA sentences:
   - `GPGSV`
   - `GPGSA`
   - `GPRMC`
+
+Tested functions:
+  - `GPGGA`^1
 ## Todo:
 - [x]  Add `GPRMC` sentence parser function
 - [x]  Add interal DD to DMS converter on directive
@@ -14,6 +17,9 @@ Supported NMEA sentences:
 - [ ]  Add option to disable `GPGSV` sentence
 - [ ]  Add date option
 - [ ]  In `parse()` decide whether to `std::cout` the error or to remove it
-- [ ]  Fix issue with not being able to run functions or access variables
+- [x]  Fix issue with not being able to run functions or access variables
 - [ ]  Analyze NMEA data, from start up to functioning
-- [ ]  Test `NMEA_Parser::verify_checksum` function
+- [x]  Test `verify_checksum()` function
+- [ ]  Continue `verify_checksum()` tests, and add to `parse()` function as an `&&` condition
+
+^1: Static test

@@ -301,22 +301,28 @@ class NMEA_Parser {
         return rtn;
     }
 
-    bool verify_checksum(std::string NMEA_sentence) {
-        int i;
-        int checksum = 0;
-        
+    bool verify_checksum(std::string snt) {
+        std::string pure_nmea = snt.substr(1, snt.length()-4);
+        int int_hex, i, checksum, given_checksum;
+
+        checksum = 0;
+        given_checksum = std::stoi(snt.substr(snt.length()-2, 2), nullptr, 16);
+
         std::stringstream nmea_bytes;
-        nmea_bytes << std::hex;
 
-        // std::byte BYTES_NMEA[NMEA_sentence.length()];
-        // std::memcpy(BYTES_NMEA, NMEA_sentence.data(), NMEA_sentence.length());
+        for(i=0; i<pure_nmea.length(); i++) {
+            int_hex = int(pure_nmea[i]);
+            nmea_bytes.str("");
 
-        for(i=0; i>NMEA_sentence.length(); i++) {
-            //checksum ^ std::stoi(BYTES_NMEA[i], nullptr, 16);
-            //checksum ^ static_cast<int> (BYTES_NMEA[i]);
-            nmea_bytes << std::setfill('0') << std::setw(2) << static_cast<int> (NMEA_sentence[i]);
-            checksum ^ std::stoi(nmea_bytes.str(), nullptr, 16);
-            
+            nmea_bytes << std::hex << int_hex;
+
+            checksum = checksum ^ std::stoi(nmea_bytes.str(), nullptr, 16);
+        }
+
+        if(checksum == given_checksum) {
+            return true;
+        } else {
+            return false;
         }
     }
     
