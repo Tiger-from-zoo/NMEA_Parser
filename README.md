@@ -9,7 +9,7 @@ Supported NMEA sentences:
   - `GPRMC`
 
 Tested functions:
-  - `GPGGA`^1
+  - `GPGGA`[^1]
 ## Todo:
 - [x]  Add `GPRMC` sentence parser function
 - [x]  Add interal DD to DMS converter on directive
@@ -22,4 +22,4 @@ Tested functions:
 - [x]  Test `verify_checksum()` function
 - [ ]  Continue `verify_checksum()` tests, and add to `parse()` function as an `&&` condition
 
-^1: Static test
+[^1]: Static test
