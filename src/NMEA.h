@@ -1,8 +1,10 @@
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <array>
 #include <vector>
 #include <map>
+#include <iomanip>
 
 // Check if GNSS system ID is enabled with NMEAVERSION 4.11
 // Table of GNSS System and Signal ID'S: (https://docs.novatel.com/OEM7/Content/Logs/GPGRS.htm#System)
@@ -298,4 +300,24 @@ class NMEA_Parser {
 
         return rtn;
     }
+
+    bool verify_checksum(std::string NMEA_sentence) {
+        int i;
+        int checksum = 0;
+        
+        std::stringstream nmea_bytes;
+        nmea_bytes << std::hex;
+
+        // std::byte BYTES_NMEA[NMEA_sentence.length()];
+        // std::memcpy(BYTES_NMEA, NMEA_sentence.data(), NMEA_sentence.length());
+
+        for(i=0; i>NMEA_sentence.length(); i++) {
+            //checksum ^ std::stoi(BYTES_NMEA[i], nullptr, 16);
+            //checksum ^ static_cast<int> (BYTES_NMEA[i]);
+            nmea_bytes << std::setfill('0') << std::setw(2) << static_cast<int> (NMEA_sentence[i]);
+            checksum ^ std::stoi(nmea_bytes.str(), nullptr, 16);
+            
+        }
+    }
+    
 };
