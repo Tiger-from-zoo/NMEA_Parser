@@ -15,11 +15,11 @@ Tested functions:
 - [x]  Add interal DD to DMS converter on directive
 - [ ]  Add directives for accepted NMEA sentences
 - [ ]  Add option to disable `GPGSV` sentence
-- [ ]  Add date option
+- [x]  Add date option
 - [ ]  In `parse()` decide whether to `std::cout` the error or to remove it
 - [x]  Fix issue with not being able to run functions or access variables
 - [ ]  Analyze NMEA data, from start up to functioning
 - [x]  Test `verify_checksum()` function
-- [ ]  Continue `verify_checksum()` tests, and add to `parse()` function as an `&&` condition
+- [x]  Continue `verify_checksum()` tests, and add to `parse()` function as an `&&` condition
 
 [^1]: Static test

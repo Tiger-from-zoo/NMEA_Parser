@@ -29,67 +29,67 @@ class NMEA_Parser {
 
     /// All precision dilutions
 
-    double hdop = 0;
-    double vdop = 0;
-    double pdop = 0;
+    float hdop = 0;
+    float vdop = 0;
+    float pdop = 0;
 
     // Altitude
     // METERS
-    double msl = 0;
+    float msl = 0;
 
     // Geoid Seperation / Undulation
     // METERS
-    double gsep = 0;
+    float gsep = 0;
 
     // Time since latest correction data update
     // SECONDS
-    double adgd = 0;
+    float adgd = 0;
 
     //Track made good / True heading
     // DEGREES
-    double deg_t = 0;
+    float deg_t = 0;
 
     // Magnetic Variation
     // DEGREES
-    double mag_var = 0;
+    float mag_var = 0;
 
     // Magnetic Variation Direction
     // STING (E OR W)
-    std::string mag_var_dir = "E";
+    char mag_var_dir = 'E';
 
     //Position Status
     // A = Valid
     // V = invalid
-    std::string pos_stat = "V";
+    char pos_stat = 'V';
 
     // Spped
     // KNOTS
-    double speed = 0;
+    float speed = 0;
 
     /// Time
 
     // Hours
-    int hh = 0;
+    unsigned short hh = 0;
 
     // Minutes
-    int mm = 0;
+    unsigned short mm = 0;
 
     // Seconds
-    int ss = 0;
+    unsigned short ss = 0;
 
     // Milliseconds
-    int ms = 0;
+    unsigned short ms = 0;
 
     /// Date
     
     // Year 
-    int year = 2024;
+    unsigned short year = 2024;
 
     // Month
-    int month = 1;
+    unsigned short month = 1;
 
     // Day
-    int day = 1;
+    unsigned short day = 1;
 
     /// Misc.
 
@@ -103,42 +103,54 @@ class NMEA_Parser {
     // 7 = Manually inputed position
     // 8 = Simulation
     // 9 = SBAS
-    int fix = 0;
+    unsigned short fix = 0;
 
     // Satellites
     // COUNT
-    int sat = 0;
+    unsigned short sat = 0;
 
     // Fix mode
     // 1 = Fix not availible 
     // 2 = 2D
     // 3 = 3D
-    int mode = 0;
+    unsigned short mode = 0;
 
     // Satellite information vector
     // Each element is an array of 4 doubles and, in order, they mean: {PRN, ELEVATION, AZIMUTH, SNR}
-    std::vector<std::array<double, 4>> sat_status;
+    std::vector<std::array<float, 4>> sat_status;
+    std::array<float, 4> sv_buffer {};
+
+    /// (parse, split) Deliminators
+
+    const char start_delim = '$';
+    const char end_delim = '*';
+    const char c_delim = ',';
+    const char s_delim = ' ';
+
+    /// (GSV) Indicies of satellite information in sv_buffer
+    
+    const unsigned short prn = 4;
+    const unsigned short elev = 5;
+    const unsigned short az = 6;
+    const unsigned short snr = 7;
 
     // Takes in a pointer to a buffer string to parse NMEA sentences
     void parse(std::string* sentence_group) {
         std::size_t idx = 0;
-        std::string delim = " ";
         // std::string sentence_group_cpy = sentence_group;
         
         // Remove any spaces
-        while ((idx = (*sentence_group).find(delim)) != std::string::npos) {
+        while ((idx = (*sentence_group).find(s_delim)) != std::string::npos) {
             (*sentence_group).erase((*sentence_group).begin()+idx);
         }
         
         // Get individual sentences
         std::size_t start_idx = 0;
         std::size_t end_idx;
-        std::string start_delim = "$";
-        std::string end_delim = "*";
         std::string NMEA_sentence;
 
         /// Loops through every valid NMEA sentence, parses it, hands off sentence in a vector to appropriate sub-parser function, and stores relevant information into variables
-        while ((start_idx = (*sentence_group).find(start_delim)) != std::string::npos && (end_idx = (*sentence_group).find(end_delim)) != std::string::npos) {
+        while ((start_idx = (*sentence_group).find(start_delim)) != std::string::npos && (end_idx = (*sentence_group).find(end_delim)) != std::string::npos && verify_checksum(NMEA_sentence)) {
             NMEA_sentence = (*sentence_group).substr(start_idx, (end_idx-start_idx+3));
             switch (NMEA_sentence_map[NMEA_sentence.substr(0, 6)]) {
                 case ev_GGA:
@@ -155,7 +167,7 @@ class NMEA_Parser {
                     break;
                 default:
                     //Remove message?
-                    std::cout << "\"" << NMEA_sentence.substr(0, 6) << "\"" << "is not a verified GPS NMEA sentence or unsupported NMEA sentence type" << std::endl;
+                    // std::cout << "\"" << NMEA_sentence.substr(0, 6) << "\" " << "is not a verified GPS NMEA sentence or unsupported NMEA sentence type" << std::endl;
                     break;
             }
             (*sentence_group).erase(start_idx, (end_idx-start_idx+3));
@@ -203,15 +215,14 @@ class NMEA_Parser {
         } else { return; }
 
 
-        // Fix, satellites, and HDOP
+        // Fix and satellites
         fix = std::stoi(GGA[6]);
         sat = std::stoi(GGA[7]);
-        hdop = std::stod(GGA[8]);
 
         // Altitude, Geoid Seperation, and Age of Differential GPS Data
-        if (GGA[9] != "") { msl = std::stod(GGA[9]); }
-        if (GGA[11] != "") { gsep = std::stod(GGA[11]); }
-        if (GGA[13] != "") { adgd = std::stod(GGA[13]); }
+        if (GGA[9] != "") { msl = std::stof(GGA[9]); }
+        if (GGA[11] != "") { gsep = std::stof(GGA[11]); }
+        if (GGA[13] != "") { adgd = std::stof(GGA[13]); }
 
         return;
     }
@@ -226,14 +237,7 @@ class NMEA_Parser {
         //             {            }{           }{           }{           }
         //   0   1 2 3   4  5  6   7  8  9  10 11 12 13  14 15 16 17 18  19
         //$GPGSV,3,2,11,14,25,170,00,16,57,208,39,18,67,296,40,19,40,246,00*74
-        std::array<double, 4> sv_buffer {};
         
-        // Indicies of satellite information in sv_buffer
-        int prn = 4;
-        int elev = 5;
-        int az = 6;
-        int snr = 7;
-
         // Amount of SV's
         // ({sentence parts}-{First four irrelevant sentence parts (sentence tpye, amount of GSV sentence, current GSV sentence, satellite count)})/{4; amount of SV information in each part}
         std::size_t svs = (GSV.size()-4)/4;
@@ -241,11 +245,11 @@ class NMEA_Parser {
         for (int i = 0; i < svs; i++) {
             if (GSV[prn+(i*4)] != "") {
                 if (GSV[snr+(i*4)] != "") {
-                    sv_buffer = {std::stod(GSV[prn+(i*4)]), std::stod(GSV[elev+(i*4)]), std::stod(GSV[az+(i*4)]), std::stod(GSV[snr+(i*4)])};
+                    sv_buffer = {std::stof(GSV[prn+(i*4)]), std::stof(GSV[elev+(i*4)]), std::stof(GSV[az+(i*4)]), std::stof(GSV[snr+(i*4)])};
                 } else if (GSV[snr+(i*4)] == "") {
-                    sv_buffer = {std::stod(GSV[prn+(i*4)]), std::stod(GSV[elev+(i*4)]), std::stod(GSV[az+(i*4)]), 0};
+                    sv_buffer = {std::stof(GSV[prn+(i*4)]), std::stof(GSV[elev+(i*4)]), std::stof(GSV[az+(i*4)]), 0};
                 } else {
-                    sv_buffer = {std::stod(GSV[prn+(i*4)]), 0, 0, 0};
+                    sv_buffer = {std::stof(GSV[prn+(i*4)]), 0, 0, 0};
                 }
                 sat_status.push_back(sv_buffer);
             }
@@ -256,7 +260,9 @@ class NMEA_Parser {
 
     void parse_RMC(std::vector<std::string> RMC) {
         // https://docs.novatel.com/OEM7/Content/Logs/GPRMC.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CGNSS%20Logs%7C_____69
-        if(RMC[7] != "") { speed = std::stod(RMC[7]); }
+        if (RMC[2] != "") { pos_stat = (RMC[2])[0]; }
+
+        if(RMC[7] != "") { speed = std::stof(RMC[7]); }
 
         if(RMC[9] != "") { 
             day = std::stoi(RMC[9].substr(0, 2));
@@ -264,9 +270,9 @@ class NMEA_Parser {
             year = 2000 + std::stoi(RMC[9].substr(4, 2));
         }
 
-        if(RMC[8] != "") { deg_t = std::stod(RMC[8]); }
-        if(RMC[10] != "") { mag_var = std::stod(RMC[10]); }
-        if(RMC[11] != "") { mag_var_dir = RMC[11]; }
+        if(RMC[8] != "") { deg_t = std::stof(RMC[8]); }
+        if(RMC[10] != "") { mag_var = std::stof(RMC[10]); }
+        if(RMC[11] != "") { mag_var_dir = (RMC[11])[0]; }
         
         return; 
     }
@@ -276,9 +282,9 @@ class NMEA_Parser {
         // https://docs.novatel.com/OEM7/Content/Logs/GPGSA.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CGNSS%20Logs%7C_____63
         if (GSA[2] == "") {
             mode = std::stoi(GSA[2]);
-            if (GSA[15] != "") { pdop = std::stod(GSA[15]); }
-            if (GSA[16] != "") { hdop = std::stod(GSA[16]); }
-            if (GSA[17] != "") { vdop = std::stod(GSA[17]); }
+            if (GSA[15] != "") { pdop = std::stof(GSA[15]); }
+            if (GSA[16] != "") { hdop = std::stof(GSA[16]); }
+            if (GSA[17] != "") { vdop = std::stof(GSA[17]); }
             } else { mode = 0; pdop = 0; hdop = 0; vdop = 0; }
 
         return;
@@ -287,14 +293,14 @@ class NMEA_Parser {
     // Individual sentence part splitter
     std::vector<std::string> split(std::string sentence) {
         std::size_t idx = 0;
-        std::string delim = ",";
+        // std::string delim = ",";
         std::string sentence_cpy = sentence;
         std::vector<std::string> rtn;
 
         // Seperate sentence parts
-        while ((idx = sentence_cpy.find(delim)) != std::string::npos) {
+        while ((idx = sentence_cpy.find(c_delim)) != std::string::npos) {
             rtn.push_back(sentence_cpy.substr(0, idx));
-            sentence_cpy.erase(0, idx + delim.length());
+            sentence_cpy.erase(0, idx + 1); // 1 is the length of the "," deliminator
         }
         rtn.push_back(sentence_cpy);
 
@@ -303,7 +309,7 @@ class NMEA_Parser {
 
     bool verify_checksum(std::string snt) {
         std::string pure_nmea = snt.substr(1, snt.length()-4);
-        int int_hex, i, checksum, given_checksum;
+        unsigned short int_hex, i, checksum, given_checksum;
 
         checksum = 0;
         given_checksum = std::stoi(snt.substr(snt.length()-2, 2), nullptr, 16);
@@ -321,9 +327,9 @@ class NMEA_Parser {
 
         if(checksum == given_checksum) {
             return true;
-        } else {
-            return false;
         }
+
+        return false;
     }
     
 };
