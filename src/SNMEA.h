@@ -1,8 +1,8 @@
-#include <iostream>
-#include <string>
+#include <iostream> // remove when done
+#include <string> // remove when done
 #include <sstream>
 #include <array>
-#include <vector>
+#include <vector> // remove when done
 #include <map>
 
 // Check if GNSS system ID is enabled with NMEAVERSION 4.11
@@ -53,7 +53,7 @@ class NMEA_Parser {
     float mag_var = 0;
 
     // Magnetic Variation Direction
-    // STING (E OR W)
+    // STRING (E OR W)
     char mag_var_dir = 'E';
 
     //Position Status
@@ -116,8 +116,8 @@ class NMEA_Parser {
 
     // Satellite information vector
     // Each element is an array of 4 doubles and, in order, they mean: {PRN, ELEVATION, AZIMUTH, SNR}
-    std::array<std::array<float, 4>, 32> sat_status;
-    std::array<float, 4> sv_buffer {};
+    std::array<std::array<short int, 4>, 32> sat_status;
+    std::array<short int, 4> sv_buffer {};
 
     /// (parse, split) Deliminators
 
@@ -202,8 +202,12 @@ class NMEA_Parser {
         return; 
     }
 
+    unsigned short int sat_status_array_index(unsigned short int GSV_index, unsigned short int sv_index) {
+        return (4*(GSV_index-1))+sv_index;
+    }
+
     // Sub-parser functions
-    void parse_GGA(const std::vector<std::string> GGA) {
+    void parse_GGA(const std::array<std::string, 24> GGA) {
         // https://docs.novatel.com/OEM7/Content/Logs/GPGGA.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CGNSS%20Logs%7C_____59
 
         // Time
@@ -240,12 +244,12 @@ class NMEA_Parser {
         return;
     }
 
-    void parse_GSV(const std::vector<std::string> GSV) {
+    void parse_GSV(const std::array<std::string, 24> GSV) {
         // ^1 = https://docs.novatel.com/OEM7/Content/Logs/GPGSV.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CGNSS%20Logs%7C_____65
 
         // If a new set of GSV sentences arrives, the sentence index(Message number^1) will be "1," so it clears the old satellite information
         if (GSV[2] == "1") {
-            memset(&sat_status, 0, 32);
+            memset(&sat_status, 0, sizeof(sat_status));
         }
         //             {            }{           }{           }{           }
         //   0   1 2 3   4  5  6   7  8  9  10 11 12 13  14 15 16 17 18  19
@@ -258,20 +262,20 @@ class NMEA_Parser {
         for (int i = 0; i < svs; i++) {
             if (GSV[prn+(i*4)] != "") {
                 if (GSV[snr+(i*4)] != "") {
-                    sv_buffer = {std::stof(GSV[prn+(i*4)]), std::stof(GSV[elev+(i*4)]), std::stof(GSV[az+(i*4)]), std::stof(GSV[snr+(i*4)])};
+                    sv_buffer = {static_cast<short>(std::stoi(GSV[prn+(i*4)])), static_cast<short>(std::stoi(GSV[elev+(i*4)])), static_cast<short>(std::stoi(GSV[az+(i*4)])), static_cast<short>(std::stoi(GSV[snr+(i*4)]))};
                 } else if (GSV[snr+(i*4)] == "") {
-                    sv_buffer = {std::stof(GSV[prn+(i*4)]), std::stof(GSV[elev+(i*4)]), std::stof(GSV[az+(i*4)]), 0};
+                    sv_buffer = {static_cast<short>(std::stoi(GSV[prn+(i*4)])), static_cast<short>(std::stoi(GSV[elev+(i*4)])), static_cast<short>(std::stoi(GSV[az+(i*4)])), 0};
                 } else {
-                    sv_buffer = {std::stof(GSV[prn+(i*4)]), 0, 0, 0};
+                    sv_buffer = {static_cast<short>(std::stoi(GSV[prn+(i*4)])), 0, 0, 0};
                 }
-                sat_status.push_back(sv_buffer);
+                sat_status[sat_status_array_index(std::stoi(GSV[2]), i)] = sv_buffer;
             }
         }
 
         return;
     }
 
-    void parse_RMC(std::vector<std::string> RMC) {
+    void parse_RMC(const std::array<std::string, 24> RMC) {
         // https://docs.novatel.com/OEM7/Content/Logs/GPRMC.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CGNSS%20Logs%7C_____69
         if (RMC[2] != "") { pos_stat = (RMC[2])[0]; }
 
@@ -290,7 +294,7 @@ class NMEA_Parser {
         return; 
     }
 
-    void parse_GSA(std::vector<std::string> GSA) {
+    void parse_GSA(const std::array<std::string, 24> GSA) {
         // https://aprs.gids.nl/nmea/#gsa
         // https://docs.novatel.com/OEM7/Content/Logs/GPGSA.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CGNSS%20Logs%7C_____63
         if (GSA[2] == "") {
@@ -304,18 +308,19 @@ class NMEA_Parser {
     }
 
     // Individual sentence part splitter
-    std::vector<std::string> split(std::string sentence) {
+    std::array<std::string, 24> split(std::string sentence) {
         std::size_t idx = 0;
-        // std::string delim = ",";
         std::string sentence_cpy = sentence;
-        std::vector<std::string> rtn;
+        std::array<std::string, 24> rtn; // number was derrived from the max amount of all sentence parts with some buffer; GGA=17, GSV=22, RMC=15, GSA=21
+        short int message_part_iter = 0;
 
         // Seperate sentence parts
         while ((idx = sentence_cpy.find(c_delim)) != std::string::npos) {
-            rtn.push_back(sentence_cpy.substr(0, idx));
+            rtn[message_part_iter] = sentence_cpy.substr(0, idx);
+            message_part_iter++;
             sentence_cpy.erase(0, idx + 1); // 1 is the length of the "," deliminator
         }
-        rtn.push_back(sentence_cpy);
+        rtn[message_part_iter] = sentence_cpy;
 
         return rtn;
     }

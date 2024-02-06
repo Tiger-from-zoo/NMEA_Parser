@@ -63,7 +63,7 @@ int main() {
     std::string test_nmea = "$GPGGA,092750.000,5321.6802,N,00630.3372,W,1,8,1.03,61.7,M,55.2,M,,*76";
     std::string test_nmea0, test_nmea1, test_nmea2, test_nmea3, test_nmea4, test_nmea5;
     test_nmea0 = "GPGSV,4,1,16,02,82,150,53,11,78,139,,12,72,191,53,25,50,296,51";
-    // test_nmea0 = "$GPGSV,4,1,16,02,82,150,53,11,78,139,,12,72,191,53,25,50,296,51*77";
+    test_nmea0 = "$GPGSV,4,1,16,02,82,150,53,11,78,139,,12,72,191,53,25,50,296,51*77"; //11
     test_nmea1 = "$GPGSV,4,2,16,06,43,056,49,20,33,149,45,29,20,275,44,19,16,087,46*73";
     test_nmea2 = "$GPGSV,4,3,16,31,11,329,42,05,10,169,42,24,07,212,44,04,01,033,*7C";
     test_nmea3 = "$GPGSV,4,4,16,44,32,184,47,51,31,171,48,48,31,194,47,46,30,199,47*7E";
@@ -112,16 +112,31 @@ int main() {
     //     nmea_bytes.clear();
     // }
     
-    NMEA_Parser par;
-    par.parse(&test_nmea);
-    std::cout << par.hh << ":" << par.mm << std::endl;
-    std::cout << par.latitude << " - " << par.longitude << std::endl;
-    std::cout << par.fix << std::endl;
-    std::cout << par.sat << std::endl;
-    std::cout << par.hdop << std::endl;
-    std::cout << par.msl << std::endl;
-    std::cout << par.gsep << std::endl;
-    std::cout << par.adgd << std::endl;
+    // NMEA_Parser par;
+    // par.parse(&test_nmea);
+    // std::cout << par.hh << ":" << par.mm << std::endl;
+    // std::cout << par.latitude << " - " << par.longitude << std::endl;
+    // std::cout << par.fix << std::endl;
+    // std::cout << par.sat << std::endl;
+    // std::cout << par.hdop << std::endl;
+    // std::cout << par.msl << std::endl;
+    // std::cout << par.gsep << std::endl;
+    // std::cout << par.adgd << std::endl;
+    // char ar[] = "";
+    // if (ar == split_to_vec(test_nmea0)[11]) {
+    //     std::cout << "x" << std::endl;
+    // }
+// 
+    // std::cout << "--" << split_to_vec(test_nmea0)[11] << "--" << std::endl;
+
+    std::array<float, 5> x;
+    memset(&x, 0, sizeof(x));
+    x[0] = 4;
+    for(int j=0; j<5; j++) {
+        std::cout << x[j] << std::endl;
+    }
+    std::cout << sizeof(x) << std::endl;
+    std::cout << x.size() << std::endl;
 
     return 0;
 }
