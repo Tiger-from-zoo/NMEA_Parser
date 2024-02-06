@@ -1,6 +1,6 @@
 # NMEA Parser
 ## Description
-In the current configuration, only NAVSTAR/GPS NMEA sentences are accepted.
+In the current configuration, ~~only NAVSTAR/GPS NMEA~~ NAVSTAR/GPS NMEA, Gallileo, GLONASS, and BeiDou sentences are accepted.
 
 Supported NMEA sentences:
   - `GPGGA`
@@ -21,5 +21,8 @@ Tested functions:
 - [ ]  Analyze NMEA data, from start up to functioning
 - [x]  Test `verify_checksum()` function
 - [x]  Continue `verify_checksum()` tests, and add to `parse()` function as an `&&` condition
+- [ ]  Change vectors to char array arrays
+- [ ]  Add `__attribute((always_inline))` to `NMEA::init_enums`?
+- [ ] If vectors are kept, change vector inputs in parser functions to `const std::vector<std::string>`
 
 [^1]: Static test

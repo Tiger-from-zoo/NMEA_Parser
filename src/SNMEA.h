@@ -4,7 +4,6 @@
 #include <array>
 #include <vector>
 #include <map>
-#include <iomanip>
 
 // Check if GNSS system ID is enabled with NMEAVERSION 4.11
 // Table of GNSS System and Signal ID'S: (https://docs.novatel.com/OEM7/Content/Logs/GPGRS.htm#System)
@@ -117,7 +116,7 @@ class NMEA_Parser {
 
     // Satellite information vector
     // Each element is an array of 4 doubles and, in order, they mean: {PRN, ELEVATION, AZIMUTH, SNR}
-    std::vector<std::array<float, 4>> sat_status;
+    std::array<std::array<float, 4>, 32> sat_status;
     std::array<float, 4> sv_buffer {};
 
     /// (parse, split) Deliminators
@@ -204,7 +203,7 @@ class NMEA_Parser {
     }
 
     // Sub-parser functions
-    void parse_GGA(std::vector<std::string> GGA) {
+    void parse_GGA(const std::vector<std::string> GGA) {
         // https://docs.novatel.com/OEM7/Content/Logs/GPGGA.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CGNSS%20Logs%7C_____59
 
         // Time
@@ -241,12 +240,12 @@ class NMEA_Parser {
         return;
     }
 
-    void parse_GSV(std::vector<std::string> GSV) {
+    void parse_GSV(const std::vector<std::string> GSV) {
         // ^1 = https://docs.novatel.com/OEM7/Content/Logs/GPGSV.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CGNSS%20Logs%7C_____65
 
         // If a new set of GSV sentences arrives, the sentence index(Message number^1) will be "1," so it clears the old satellite information
         if (GSV[2] == "1") {
-            sat_status.clear();
+            memset(&sat_status, 0, 32);
         }
         //             {            }{           }{           }{           }
         //   0   1 2 3   4  5  6   7  8  9  10 11 12 13  14 15 16 17 18  19
