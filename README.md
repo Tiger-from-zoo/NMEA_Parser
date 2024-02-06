@@ -1,6 +1,6 @@
 # NMEA Parser
 ## Description
-In the current configuration, ~~only NAVSTAR/GPS NMEA~~ NAVSTAR/GPS NMEA, Gallileo, GLONASS, and BeiDou sentences are accepted.
+In the current configuration, ~~only NAVSTAR/GPS NMEA~~ NAVSTAR/GPS, Gallileo, GLONASS, and BeiDou NMEA sentences are accepted.
 
 Supported NMEA sentences:
   - `GPGGA`
